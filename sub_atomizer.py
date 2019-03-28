@@ -1,6 +1,6 @@
-from typing import Dict, List
 from enum import Enum
-import sub_parser as sp
+from typing import Dict, List
+import sub_parser as p
 import sys
 import textwrap
 
@@ -52,7 +52,7 @@ def atomized_uniqueness(value_atoms: List, values: List, time: int):
 
 def atomized_state(state: Dict, time: int):
     '''
-    Takes a state and returns the next values in a tuple with the values that cannot coexist.
+    Takes a state and returns the next values in a tuple along with the values that cannot coexist.
     '''
     value_atoms = []
     values = []
@@ -62,23 +62,8 @@ def atomized_state(state: Dict, time: int):
     unique_val_nots = atomized_uniqueness(value_atoms, values, time)
     return value_atoms, unique_val_nots
     
-def clausified_positivity(ass: List, initState: Dict):
-    '''
-    (Ass(RA,RB,I)^Val(RB,V,I)) -> Val(RA,V,I+1) 
-    == XAss v XVal v Val [via DeMorgans and implication removal]
-    '''
-    afterstate = []
-    writeToRA = asstuple[0]
-    writeFromRB = asstuple[1]
-    atTimeI = asstuple[2]
-    rbv = initState[writeFromRB]
-    XAss = makeFullAtom(False, writeToRA, writeFromRB, atTimeI, ASS)
-    XVal = makeFullAtom(False, writeFromRB, rbv, atTimeI, VAL)
-    Val = makeFullAtom(True, writeToRA, rbv, atTimeI+1, VAL)
-    return [[XAss, XVal, Val], 'positivity']
 
-
-def populate(reqs: Dict):
+def populateStartGoal(reqs: Dict):
     start, antistart = atomized_state(reqs['START'], 0)
     goal, antigoal = atomized_state(reqs['GOAL'], reqs['LIMIT'])
     clausified = necessitate_truth(start+goal, 'want true') + necessitate_falsehood(antistart+antigoal, 'want false') 
@@ -98,6 +83,6 @@ if __name__ == "__main__":
     except:
         print("Please input the path of the register requirements.") 
     else:
-        reqs = sp.read_in(path)
-        clauses = populate(reqs)
+        reqs = p.read_in(path)
+        clauses = populateStartGoal(reqs)
         printClauses(clauses)
