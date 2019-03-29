@@ -8,75 +8,61 @@ class Atom(Enum):
     VAL=0
     ASS=1
 
-def clausify_single(atoms: List, booleanAss, reason):
-    '''
-    Takes a list of single atoms and establishes them all to a given truth value.
-    They are singletons which we are batch-defining for ease of use.
-    '''
-    clausified = [] 
-    for atom in atoms:
-        fullAtom = [[booleanAss]+atom+['val']]
-        clausified.append([fullAtom, reason])
-    return clausified
-
-def necessitate_truth(atoms: List, reason):
-    '''
-    All atoms in this list will always yearn to be true.
-    '''
-    return clausify_single(atoms, ' ', reason)
-
-def necessitate_falsehood(atoms: List, reason):
-    '''
-    All atoms in this list will always yearn to be false.
-    '''
-    return clausify_single(atoms, 'NOT', reason)
-
-def makeFullAtom(boolVal: bool, slot1, slot2, time: int, type: int):
+def makeFullAtom(boolVal: bool, slot1, slot2, extraInfo, time: int, type):
     '''
     Makes creating atoms slightly faster.
     '''
-    notStat = ' ' if bool else 'NOT'
-    typeStr = 'val' if Atom.type.value==1 else 'ass'
-    resList = [notStat, slot1, slot2, time, typeStr]
+    notStat = ' ' if boolVal else 'NOT'
+    typeStr = 'ass' if type.value==1 else 'val'
+    resList = [notStat, slot1, slot2, extraInfo, time, typeStr]
+    return resList
 
-def atomized_uniqueness(value_atoms: List, start: List, time: int):
+def join(l, sep):
     '''
-    Takes a set of established values and returns the values that cannot coexist with these.
+    Used in printClauses to join atoms in CNF clauses with the OR operator 'v'
     '''
-    unique_val_nots = []
-    for i, atom in enumerate(value_atoms):
-        for j, orig in enumerate(start):
-            if atom[1]!=orig[1]: 
-                    unique_val_nots.append([atom[0],orig[1],orig[0],time])
-    return unique_val_nots
+    out_str = ''
+    for i, el in enumerate(l):
+        out_str += '{}{}'.format(el, sep)
+    return out_str[:-len(sep)]
 
-def atomized_state(state: Dict, start: Dict, time: int):
+def printClauses(clauses: List, preferredWidth = 140):
     '''
-    Takes a state and returns the next values in a tuple along with the values that cannot coexist.
+    Prints a line with the Clause #, CNF clause, and meaning (for sanity)
     '''
-    value_atoms = []
-    start_atoms = []
-    for i, key in enumerate(state):
-        value_atoms.append([key, state[key], time])
-    for i, key in enumerate(start):
-        start_atoms.append([key, start[key]])
-    print(start_atoms)
-    unique_val_nots = atomized_uniqueness(value_atoms, start_atoms, time)
-    return value_atoms, unique_val_nots
-
-def populateStartGoal(reqs: Dict):
-    start, antistart = atomized_state(reqs['START'], reqs['START'], 0)
-    goal, antigoal = atomized_state(reqs['GOAL'], reqs['START'], reqs['LIMIT'])
-    clausified = necessitate_truth(start+goal, 'want true') + necessitate_falsehood(antistart, 'want false strt') + necessitate_falsehood(antigoal, 'want false goal') 
-    return clausified 
-
-def printClauses(clauses: List, preferredWidth = 70):
     for i, clause in enumerate(clauses):
         prefix = "Clause "+str(i+1)+"\t"
         wrapper = textwrap.TextWrapper(initial_indent=prefix, width=preferredWidth,
                             subsequent_indent=' '*len(prefix))
-        message = wrapper.fill(str(clause[1])+"\t"+str(clause[0]))
-        print(message)
+        clauseItself = clause[0]
+        clauseMeaning = clause[1]
+        clauseCNF = join(clauseItself, " v ")
+        message = wrapper.fill(clauseCNF+"\t"+str(clauseMeaning))
+        print(message+"\n")
+
+def permute_possible_values(start: Dict):
+    '''
+    Returns a general list of all assignments that can be at a register at a given time.
+    In the format of a tuple (Register, Value, Start Register that held that value)
+    This is basically all possible value atoms at a given time. 
+    '''
+    possible_values = []
+    for i, reg in enumerate(start):
+        extendBy = [(reg, start[origReg], origReg) for j, origReg in enumerate(start)]
+        possible_values.extend(extendBy)
+    return possible_values
+
+def permute_possible_assignments(start: Dict):
+    '''
+    Likewise, all possible assignment atoms at a given time.
+    '''
+    possibleAssignments = []
+    for i, assignTo in enumerate(start):
+        for j, assignFrom in enumerate(start):
+            # if assignTo != assignFrom: # If we want to prevent tautological assignments
+            if True:
+                possibleAssignments.append((assignTo, assignFrom))
+    return possibleAssignments
 
 if __name__ == "__main__":
     try:
@@ -84,6 +70,4 @@ if __name__ == "__main__":
     except:
         print("Please input the path of the register requirements.") 
     else:
-        reqs = p.read_in(path)
-        clauses = populateStartGoal(reqs)
-        printClauses(clauses)
+        pass
