@@ -39,34 +39,35 @@ def makeFullAtom(boolVal: bool, slot1, slot2, time: int, type: int):
     typeStr = 'val' if Atom.type.value==1 else 'ass'
     resList = [notStat, slot1, slot2, time, typeStr]
 
-def atomized_uniqueness(value_atoms: List, values: List, time: int):
+def atomized_uniqueness(value_atoms: List, start: List, time: int):
     '''
     Takes a set of established values and returns the values that cannot coexist with these.
     '''
     unique_val_nots = []
     for i, atom in enumerate(value_atoms):
-        for i, val in enumerate(values):
-            if atom[1]!=val:
-                unique_val_nots.append([atom[0],val,time])
+        for j, orig in enumerate(start):
+            if atom[1]!=orig[1]: 
+                    unique_val_nots.append([atom[0],orig[1],orig[0],time])
     return unique_val_nots
 
-def atomized_state(state: Dict, time: int):
+def atomized_state(state: Dict, start: Dict, time: int):
     '''
     Takes a state and returns the next values in a tuple along with the values that cannot coexist.
     '''
     value_atoms = []
-    values = []
+    start_atoms = []
     for i, key in enumerate(state):
         value_atoms.append([key, state[key], time])
-        values.append(state[key])
-    unique_val_nots = atomized_uniqueness(value_atoms, values, time)
+    for i, key in enumerate(start):
+        start_atoms.append([key, start[key]])
+    print(start_atoms)
+    unique_val_nots = atomized_uniqueness(value_atoms, start_atoms, time)
     return value_atoms, unique_val_nots
-    
 
 def populateStartGoal(reqs: Dict):
-    start, antistart = atomized_state(reqs['START'], 0)
-    goal, antigoal = atomized_state(reqs['GOAL'], reqs['LIMIT'])
-    clausified = necessitate_truth(start+goal, 'want true') + necessitate_falsehood(antistart+antigoal, 'want false') 
+    start, antistart = atomized_state(reqs['START'], reqs['START'], 0)
+    goal, antigoal = atomized_state(reqs['GOAL'], reqs['START'], reqs['LIMIT'])
+    clausified = necessitate_truth(start+goal, 'want true') + necessitate_falsehood(antistart, 'want false strt') + necessitate_falsehood(antigoal, 'want false goal') 
     return clausified 
 
 def printClauses(clauses: List, preferredWidth = 70):

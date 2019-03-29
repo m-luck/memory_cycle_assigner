@@ -2,9 +2,20 @@ from enum import Enum
 from typing import Dict, List
 from sub_atomizer import *
 
+def permute_possible_assignments(start: Dict, time: int):
+    possibleAssignments = []
+    for i, assignTo in enumerate(start):
+        for j, assignFrom in enumerate(start):
+            if assignTo != assignFrom:
+                possibleAssignments.append([assignTo, assignFrom, time])
+    return possibleAssignments
+
+def permute_in_time_step(time: int):
+    pass
+
 def clausified_positivity(asstuple: List, initState: Dict):
     '''
-    (Ass(RA,RB,I)^Val(RB,V,I)) -> Val(RA,V,I+1) 
+    (Ass(RA,RB,I)^Val(RB,Vb,I)) -> Val(RA,Vb,I+1) 
     == XAss v XVal v Val [via DeMorgans and implication removal]
     '''
     afterstate = []
@@ -16,6 +27,9 @@ def clausified_positivity(asstuple: List, initState: Dict):
     XVal = makeFullAtom(False, writeFromRB, Vb, atTimeI, VAL)
     Val = makeFullAtom(True, writeToRA, Vb, atTimeI+1, VAL)
     return [[XAss, XVal, Val], 'positivity']
+
+def permute_positivity(a):
+    pass
 
 def clausified_framing(val: List, state: Dict, time: int): 
     '''
@@ -29,16 +43,6 @@ def clausified_framing(val: List, state: Dict, time: int):
     # XVal = makeFullAtom(False, Ra, Va, I)
     pass
 
-def permute_possible_assignments(start: Dict, time: int):
-    possibleAssignments = []
-    for i, assignTo in enumerate(start):
-        for j, assignFrom in enumerate(start):
-            if assignTo != assignFrom:
-                possibleAssignments.append([assignTo, assignFrom, time])
-    return possibleAssignments
-
-def permute_in_time_step(time: int):
-    pass
 
 if __name__ == "__main__":
     try:
