@@ -1,3 +1,4 @@
+from itertools import permutations
 from sub_atomizer import *
 
 def permute_each_time_step(maxTime: int, start: Dict, possvals: List, possasses: List, clauseFuncs: List):
@@ -7,12 +8,12 @@ def permute_each_time_step(maxTime: int, start: Dict, possvals: List, possasses:
     '''
     addedClauses = []
     for t in range(maxTime+1): 
-        for gen in clauseFuncs:
-            addedClauses.extend(gen(t, start, possvals, possasses)) # t + 1 because value t will start from 0 when it indicates time 1
+        for fun in clauseFuncs:
+            addedClauses.extend(fun(t, start, possvals, possasses)) # As a result all generators passed in should have formal arguments int, dic, list, list
     return addedClauses
 
 def orig_regs_not_same(start: Dict, val):
-    oRNS = [] # original Register containers for the values that are Not the Same as passed in value
+    oRNS = [] # original Registers holding the values that are Not the Same as passed in value
     ''' 
     For now this is used in clausifying uniqueness: 
     Finding all possible corresponding start registers s.t. Vy!=val where Vy is the original value of the register. 
@@ -33,15 +34,20 @@ def clausified_uniqueness(time: int, start: Dict, possvals: List, possasses: Lis
     addedClauses = []
     for val_atom in possvals:
         Ra = val_atom[0]
-        rawV = val_atom[1]
-        oV = val_atom[2] # The original register at time 0 which holds rawV
-        Vys = orig_regs_not_same(start, rawV)
+        V = val_atom[1]
+        oV = val_atom[2] # The original register at time 0 which holds V
+        Vys = orig_regs_not_same(start, V)
         for origReg in Vys:
-            meaning = 'If Val({Ra},{rawV},{time}) '\
-                'then ~Val({Ra}, {Vy}, {time})'.format(Ra=Ra, rawV=rawV, time=time, origReg=origReg, Vy=start[origReg])
-            XVal1 = makeFullAtom(False, Ra, rawV, oV, time, Atom.VAL) 
+            meaning = 'If Val({Ra},{V},{time}) '\
+                'then ~Val({Ra}, {Vy}, {time})'.format(
+                    Ra=Ra, 
+                    V=V, 
+                    time=time, 
+                    origReg=origReg, 
+                    Vy=start[origReg])
+            XVal1 = makeFullAtom(False, Ra, V, oV, time, Atom.VAL) 
             XVal2 = makeFullAtom(False, Ra, start[origReg], origReg, time, Atom.VAL)
-            addedClauses.append(([XVal1, XVal2], meaning))
+            addedClauses.append(([XVal1, XVal2], meaning, 'uniq'))
     return addedClauses
 
 
@@ -49,7 +55,8 @@ def clausified_positivity(time: int, start: Dict, possvals: List, possasses: Lis
     '''
     (Ass(RA,RB,I)^Val(RB,Vb,I)) -> Val(RA,Vb,I+1) 
     == Ass(RA,RB,I)^(Val(RB,Vb,I) -> Val(RA,Vb,I+1) ::: permutes over all possible values where the register is RB
-    == XAss v XVal v Val [via DeMorgans and implication removal]
+    == XAss v XVal v Val 
+    Returns this CNF clause along with the meaning.
     '''
     addedClauses = []
     for ass_atom in possasses:
@@ -60,21 +67,126 @@ def clausified_positivity(time: int, start: Dict, possvals: List, possasses: Lis
             V = val_atom[1]
             oV = val_atom[2] # original register at time 0 which holds V
             if Rb == R:
-               XAss = makeFullAtom()  
+               XAss = makeFullAtom(False, Ra, start[oV], Rb, time, Atom.ASS)  
+               XVal = makeFullAtom(False, Rb, V, oV, time, Atom.VAL)
+               Val = makeFullAtom(True, Ra, V, oV, time+1, Atom.VAL)
+               meaning = 'If (Ass({Ra},{Rb},{time}) and Val({Rb},{V},{time})) then Val({Ra},{V},{timeplus1})'.format(
+                   Ra=Ra,
+                   Rb=Rb,
+                   time=time,
+                   V=V,
+                   timeplus1=time+1)
+               addedClauses.append(([XAss, XVal, Val],meaning,'pos'))
+    return addedClauses
 
 
 
-def clausified_framing(val: List, state: Dict, time: int): 
+def clausified_framing(time: int, start: Dict, possvals: List, possasses: List): 
     '''
-    Frame axiom (no change if no assignment) 
+    Frame axiom (no change if no assignment):
     If Value(R,Vx,I) and not Assign(R,R1,I) and not Assign(R,R2,I) and ... and not Assign(R,Rn,I) then Value(R,Vx,I+1)
-    = [Val(R,Vx,I) ^ (XAss(R,Rn,I) [for Rn in all R]) => Val(R, Vx, I+1)
+    = [Val(R,Vx,I) ^ XAss(R,R1,I) ... ^ XAss(R,Rn,I)] => Val(R, Vx, I+1)
     = X[...] ^ Val(R, Vx, I+1)
-    = [XVal(R,Vx,I) v (Ass(R,Rn,I) [for Rn in all R]) v Val(R, Vx, I+1)
+    = XVal(R,Vx,I) v Ass(R,R1,I) ... v Ass(R,Rn,I) v Val(R, Vx, I+1) 
+
+    This will nest:
+    loop over possible values (R, V, _)
+    loop over possible assignments (Ra,Rb)
+
+    Attempted: loop again over possible values (R, V, _) again to permute over possible raw assignments. Resulted in 10K+ clauses. So not implemented.
+
+    Returns CNF clauses with meanings.
     '''
-    for reg in state:
-        XVal = makeFullAtom(False, Ra, Va, I)
-    pass
+    addedClauses = []
+    for value_atom in possvals:
+        R = value_atom[0]
+        V = value_atom[1]
+        oV = value_atom[2]
+        XVal = makeFullAtom(False, R, V, oV, time, Atom.VAL)
+        clause = [XVal] # We will have to make a list this time because of necessary iteration of unknown count n
+        for ass_atom in possasses:
+            Ra = ass_atom[0]
+            Rb = ass_atom[1]
+            if Ra == R:
+                meaning = 'If Val({R},{V},{time}) and ~Ass({R},R1,{time})... and ~Ass({R},Rn,{time}) then Val({R},{V},{timeplus1})'.format(
+                    R=R,
+                    Ra=Ra,
+                    Rb=Rb,
+                    time=time,
+                    V=V,
+                    timeplus1=time+1)
+                addToClause = makeFullAtom(True,R, '',Rb,time,Atom.ASS)
+                clause.append(addToClause)
+        Val = makeFullAtom(True, R, V, oV, time+1, Atom.VAL)
+        clause.append(Val)
+        addedClauses.append((clause,meaning,"frame"))
+    return addedClauses
+
+def perm(start: Dict, k: int):
+    '''
+    For use in clausified_incompatibility(...).
+    Returns all possible n choose 3 sets of registers in a list.
+    '''
+    regs = [reg for reg in start]
+    return permutations(regs, k) 
+
+def clausified_incompatibility(time: int, start: Dict, possvals: List, possasses: List):
+    '''
+    Incompatible assignments:
+    For any three distinct registers RA, RB, RC 
+    if Assign(RA,RB,I) then 
+    not Assign(RB,RA,I); not Assign(RA,RC,I); and not Assign(RB,RC,I).
+    == XAss(RA,RB,I) v (XAss(RB,RA,I) ^ XAss(RA,RC,I) ^ XAss(RB,RC,I))
+    == XAss(RA,RB,I) v XAss(RB,RA,I)
+    && XAss(RA,RB,I) v XAss(RA,RC,I)
+    && XAss(RA,RB,I) v XAss(RB,RC,I)
+
+    TODO: account for less than 3 registers
+    '''
+    addedClauses = []
+    if len(start)==2: 
+        for duo in perm(start, 2):
+            A = duo[0]
+            B = duo[1]
+            XAssAB = makeFullAtom(False, A, '', B, time, Atom.ASS)
+            XAssBA = makeFullAtom(False, B, '', A, time, Atom.ASS)
+            meaningNoDeadlock = 'if Ass({A},{B},{time}) then ~Ass({B},{A},{time})'.format(
+                        A=A,
+                        B=B,
+                        C=C,
+                        time=time)
+            noDeadlock = ([XAssAB, XAssBA], meaningNoDeadlock)
+            addedClauses.append(noDeadlock)
+    else:
+        for trio in perm(start, 3):
+            A = trio[0]
+            B = trio[1]
+            C = trio[2]
+            XAssAB = makeFullAtom(False, A, '', B, time, Atom.ASS)
+            XAssBA = makeFullAtom(False, B, '', A, time, Atom.ASS)
+            XAssAC = makeFullAtom(False, A, '', C, time, Atom.ASS)
+            XAssBC = makeFullAtom(False, B, '', C, time, Atom.ASS)
+            meaningNoDeadlock = 'if Ass({A},{B},{time}) then ~Ass({B},{A},{time})'.format(
+                        A=A,
+                        B=B,
+                        C=C,
+                        time=time)
+            meaningNoDoubleWrite = 'if Ass({A},{B},{time}) then ~Ass({A},{C},{time})'.format(
+                        A=A,
+                        B=B,
+                        C=C,
+                        time=time)
+            meaningNoReadWrite = 'if Ass({A},{B},{time}) then ~Ass({B},{C},{time})'.format(
+                        A=A,
+                        B=B,
+                        C=C,
+                        time=time)
+            noDeadlock = ([XAssAB, XAssBA], meaningNoDeadlock, 'incom')
+            noDoubleWrite = ([XAssAB, XAssAC], meaningNoDoubleWrite, 'incom')
+            noReadWrite = ([XAssAB, XAssBC], meaningNoReadWrite, 'incom') 
+            addThese = [noDeadlock, noDoubleWrite, noReadWrite]
+            addedClauses.extend(addThese)
+    return addedClauses
 
 
 if __name__ == "__main__":
