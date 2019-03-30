@@ -67,7 +67,7 @@ def clausified_positivity(time: int, start: Dict, possvals: List, possasses: Lis
             V = val_atom[1]
             oV = val_atom[2] # original register at time 0 which holds V
             if Rb == R:
-               XAss = makeFullAtom(False, Ra, start[oV], Rb, time, Atom.ASS)  
+               XAss = makeFullAtom(False, Ra, '', Rb, time, Atom.ASS)  
                XVal = makeFullAtom(False, Rb, V, oV, time, Atom.VAL)
                Val = makeFullAtom(True, Ra, V, oV, time+1, Atom.VAL)
                meaning = 'If (Ass({Ra},{Rb},{time}) and Val({Rb},{V},{time})) then Val({Ra},{V},{timeplus1})'.format(
@@ -188,6 +188,31 @@ def clausified_incompatibility(time: int, start: Dict, possvals: List, possasses
             addedClauses.extend(addThese)
     return addedClauses
 
+def clausifiedStart(time: int, start: Dict, possvals: List, possasses: List):
+    time = 0
+    addedClauses = []
+    for i, key in enumerate(start):
+        clause = [makeFullAtom(True, key, start[key], key, time, Atom.VAL)]
+        meaning = '{key} starts as {val}'.format(key=key, val=start[key])
+        addedClauses.append((clause, meaning, 'start'))
+    return addedClauses
+
+def clausifiedGoal(limit: int, start: Dict, possvals: List, possasses: List, goal:List = ['']):
+    addedClauses = []
+    for i, key in enumerate(goal):
+        Rgoal = key
+        Vgoal = goal[key]
+        clause = []
+        for atom in possvals:
+            R = atom[0]
+            V = atom[1]
+            oV = atom[2]
+            if R==Rgoal and V == Vgoal:
+                clause.append(makeFullAtom(True, R, V, oV, limit, Atom.VAL))
+        meaning = '{R} ends as {val}'.format(R=Rgoal, val=Vgoal)
+        addedClauses.append((clause, meaning, 'goal'))
+    return addedClauses
+
 
 if __name__ == "__main__":
     try:
@@ -202,3 +227,4 @@ if __name__ == "__main__":
         possasses = permute_possible_assignments(start)
         possvals = permute_possible_values(start)
 
+        print(goal)
