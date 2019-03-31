@@ -46,6 +46,11 @@ def test_all_clausifiers(limit, start, possvals, possasses, goal):
     printClausesSimple(clauses)
     return clauses
 
+def test_read_dpll():
+    pairs = p.read_dpll_out()
+    print(pairs)
+    return pairs 
+
 if __name__ == "__main__":
     try:
         path = sys.argv[1]
@@ -73,4 +78,6 @@ if __name__ == "__main__":
         # test_incompatibility(*lsva)
         # test_start(*lsva)
         # test_goal(*lsva, goal)
-        test_all_clausifiers(*lsva, goal)
+        # test_all_clausifiers(*lsva, goal)
+
+        test_read_dpll()

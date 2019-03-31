@@ -1,5 +1,7 @@
 from enum import Enum
 from typing import List
+import ast
+import os
 import sys
 import re
 
@@ -42,6 +44,38 @@ def read_in(filePath: str):
     requirements = {}
     requirements['START'], requirements['GOAL'], requirements['LIMIT'] = start, goal, limit
     return requirements
+
+def read_dpll_out(path=os.path.join(os.pardir, 'decisions')):
+    with open(path, 'r') as f:
+        content = f.readlines()
+        pairs = {}
+        for line in content:
+            if line[0] =='0': break
+            else:
+                chars = re.split(" |\t|\r|\n", line) 
+                singlePair = populatePairs(chars)
+                pairs.update(singlePair)
+    return pairs
+
+ 
+def read_glossary(path=os.path.join(os.pardir, 'front_end_output')):
+    glossary = None
+    try:
+        with open(os.path.join(os.pardir, 'decisions'), 'r') as f:
+            try:
+                content = f.read()
+                dic = content.split('---')
+                glossary = ast.literal_eval(dic[1])
+            except:
+                print('Content could not be translated to pure dictionary, contrary to expectation.')
+    except: 
+        print('Error reading the output file. Maybe the previous program (DPLL) broke somewhere.')
+    return glossary
+
+def strToList(str):
+    res = ast.literal_eval(str)
+    assert isinstance(res, list) 
+    return res
 
 if __name__ == "__main__":
     try:

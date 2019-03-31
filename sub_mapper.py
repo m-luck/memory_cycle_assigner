@@ -1,4 +1,5 @@
 from sub_clausifier import *
+import os
 
 db: bool = True # Turn debug on or off
 
@@ -79,7 +80,8 @@ def mapOutput():
     for i, atom in enumerate(specificAtoms): 
         atomDict[i] = atom
     atomStrings = join(specificAtoms, '\n')
-    file = open('front_end_output', 'w+')
+    file = open('../front_end_output', 'w+')
+    print(file)
     file.write(clauseStrings + '\n0\n---\n' + str(atomDict))
     file.close()
     
