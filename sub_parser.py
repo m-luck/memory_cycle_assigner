@@ -45,7 +45,7 @@ def read_in(filePath: str):
     requirements['START'], requirements['GOAL'], requirements['LIMIT'] = start, goal, limit
     return requirements
 
-def read_dpll_out(path=os.path.join(os.pardir, 'decisions')):
+def read_dpll_out(path='decisions'):
     with open(path, 'r') as f:
         content = f.readlines()
         pairs = {}
@@ -58,10 +58,10 @@ def read_dpll_out(path=os.path.join(os.pardir, 'decisions')):
     return pairs
 
  
-def read_glossary(path=os.path.join(os.pardir, 'front_end_output')):
+def read_glossary(path='decisions'):
     glossary = None
     try:
-        with open(os.path.join(os.pardir, 'decisions'), 'r') as f:
+        with open(path, 'r') as f:
             try:
                 content = f.read()
                 dic = content.split('---')

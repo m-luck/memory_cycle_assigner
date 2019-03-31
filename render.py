@@ -2,19 +2,21 @@ import sub_parser as p
 from sub_atomizer import join
 
 def printFullRender(start, goal, k, solution):
-    print("Let's solve this real world problem using resolution!")
-    startLine = 'Start: '
-    startRegs = join(start, ', ')
-    startLine += startRegs + '.'
-    fullPrint = startLine + "\n"
-    goalLine = 'Goal: '
-    goalRegs = join(goal, ', ')
-    goalLine += goalRegs + '.'
-    fullPrint += goalLine + '\n'
-    fullPrint += "K = " + str(k) + '\n\nSolution:'
-    for cycle in solution:
-        cycleAss = join(solution[cycle], ', ')        
-        fullPrint += '\nCycle ' + str(cycle+1) + ": " + cycleAss + '.'
+    if len(solution) == 0: fullPrint = 'No Solution.'
+    else:
+        print("Let's solve this real world problem using resolution!")
+        startLine = 'Start: '
+        startRegs = join(start, ', ')
+        startLine += startRegs + '.'
+        fullPrint = startLine + "\n"
+        goalLine = 'End: '
+        goalRegs = join(goal, ', ')
+        goalLine += goalRegs + '.'
+        fullPrint += goalLine + '\n'
+        fullPrint += "K = " + str(k) + '\n\nSolution:'
+        for cycle in solution:
+            cycleAss = join(solution[cycle], ', ')        
+            fullPrint += '\nCycle ' + str(cycle+1) + ": " + cycleAss + '.'
     print(fullPrint)
 
 
@@ -33,8 +35,12 @@ solutionStr = ''
 valueTups = {}
 start = []
 goal = []
-k = sortedAtoms[-1][3] # Largest time in atoms is K due to generated geometry
 solution = {}
+k = -1
+for atom in sortedAtoms: 
+    atomTime = atom[3]
+    if atomTime > k:
+        k = atomTime
 for atom in sortedAtoms:
     atomType = atom[4]
     atomTime = atom[3]

@@ -1,7 +1,7 @@
 from sub_clausifier import *
 import os
 
-db: bool = True # Turn debug on or off
+db: bool = False# Turn debug on or off
 
 def generateClauses():
     try:
@@ -27,7 +27,6 @@ def generateClauses():
         clauses.extend(clausifiedStart(limit, start, possvals, possvals))
         clauses.extend(clausifiedGoal(limit, start, possvals, possasses, goal))
 
-        printClausesSimple(clauses)
         return clauses
 
 def extractUniqueAtoms(clauses: List):
@@ -80,9 +79,8 @@ def mapOutput():
     for i, atom in enumerate(specificAtoms): 
         atomDict[i] = atom
     atomStrings = join(specificAtoms, '\n')
-    file = open('../front_end_output', 'w+')
-    print(file)
-    file.write(clauseStrings + '\n0\n---\n' + str(atomDict))
+    file = open('front_end_output', 'w+')
+    file.write(clauseStrings + '\n0\n---' + str(atomDict))
     file.close()
     
 if __name__ == "__main__":
