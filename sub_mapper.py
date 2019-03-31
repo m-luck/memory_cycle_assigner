@@ -31,7 +31,7 @@ def generateClauses():
 
 def extractUniqueAtoms(clauses: List):
     distinct_atoms = {}
-    atom_index = 0
+    atom_index = 1
     for clause in clauses: 
         for atom in clause[0]:
             atom = atom[1:]
