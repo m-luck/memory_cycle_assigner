@@ -2,6 +2,10 @@ import sub_parser as p
 from sub_atomizer import join
 
 def printFullRender(start, goal, k, solution):
+    '''
+    Takes decisions and prints out the more human readable format
+    Just prints No Solution if there are no decisions.
+    '''
     if len(solution) == 0: fullPrint = 'No Solution.'
     else:
         print("Let's solve this real world problem using resolution!")
@@ -37,11 +41,11 @@ start = []
 goal = []
 solution = {}
 k = -1
-for atom in sortedAtoms: 
+for atom in sortedAtoms: # To get k from the glossary.
     atomTime = atom[3]
     if atomTime > k:
         k = atomTime
-for atom in sortedAtoms:
+for atom in sortedAtoms: # Generating the string form of values and assignments (and reducing redundancy)
     atomType = atom[4]
     atomTime = atom[3]
     if atomType == 'val':

@@ -26,7 +26,6 @@ def generateClauses():
         clauses.extend(permute_each_time_step(*lsvamin1, funlistmin1))
         clauses.extend(clausifiedStart(limit, start, possvals, possvals))
         clauses.extend(clausifiedGoal(limit, start, possvals, possasses, goal))
-
         return clauses
 
 def extractUniqueAtoms(clauses: List):
